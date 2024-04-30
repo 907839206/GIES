@@ -1,0 +1,29 @@
+Version: "v1.0"
+
+ENV: "stage"
+
+OCR:
+  MODEL_PATH: "apps/services/ocr/models"
+
+CHAT:
+  DEFAULT: 
+    FACTORY: "QWen"
+    NAME: "qwen-plus"
+
+EMBEDDING:
+  DEFAULT:
+    FACTORY: "QWen"
+    NAME: "text-embedding-v2"
+
+
+FILESTORE:
+  Type: "localpath" # [localpath,minio],目前仅支持localpath
+  LOCALPATH:
+    RAWPATH: "filestore/raw"
+
+ES:
+  HOST: ""
+  INDEX_NAME: ""
+
+
+

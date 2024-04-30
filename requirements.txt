@@ -1,0 +1,11 @@
+pyyaml
+pillow
+onnxruntime # 默认是cpu版本
+shapely
+pyclipper
+numpy 
+opencv-python
+dashscope
+werkzeug
+elasticsearch_dsl
+gradio
