@@ -1,6 +1,6 @@
 import sys,os
 import copy
-import time,traceback
+import time,traceback,json,re
 from multiprocessing import Queue,Process
 from threading import Thread
 from queue import Queue as tQueue
@@ -8,6 +8,7 @@ from queue import Queue as tQueue
 import gradio as gr
 import cv2
 import uuid
+import pandas as pd 
 
 sys.path.append(
     os.path.join(
@@ -57,17 +58,14 @@ class Executor:
     @staticmethod
     def extract_fn(select_img,local_files,extract_fields):
         if len(extract_fields) == 0:
-            gr.Warning("请输入待提取的字段信息！")
             return """
             ```json
             {}
             """,local_files,extract_fields
         if local_files is not None and len(local_files) != 0:
-            gr.Info("开始对上传图片进行信息提取！")
             return Executor.process_upload_fn(local_files,
                                             extract_fields),[],extract_fields
         elif select_img is not None:
-            gr.Info("开始对选中图片进行信息抽取！")
             return Executor.process_select_fn(select_img,extract_fields),[],extract_fields
         else:
             gr.Warning("未选中任何图片，请首先选中/上传图片文件！")
@@ -112,9 +110,80 @@ class Executor:
                 _response = ""
                 for _,v in _all_task.items():
                     _response += ("\n" + v.get().get("result",""))
+                    # _response += v.get().get("result","")
                 return _response
             time.sleep(1)
         return "Timeout"
+
+    @staticmethod
+    def color_cell(val):
+        if val ==  "通过":
+            return "background-color: lightgreen"
+        elif val == "不通过":
+            return "background-color: lightcoral"
+        else:
+            return ""
+            
+    @staticmethod
+    def check_income_fn(data,order_value,check_ratio):
+        print(f"[DEBUG] data:{data}")
+        data_json = Executor.markdown2json(data)
+        if not order_value:
+            gr.Warning("请先输入贷款月供！")
+            return
+        if len(data_json) ==0:
+            gr.Warning("请先提取字段信息！")
+            return 
+        if not isinstance(data_json,list):
+            data_json = [data_json]
+        _heads = ["姓名","年收入","月均收入","月供上限","审批"]
+        _data = {}
+        for _key in _heads:
+            _data[_key] = []
+
+        for _info in data_json:
+            _data["姓名"].append(_info["姓名"])
+            if not _info["年收入"]:
+                if _info["月收入"]:
+                    _year_income = int(float(_info["月收入"])*12)
+                    _month_income = _info["月收入"]
+                    _month_order_floor = int(float(_info["月收入"]) / float(check_ratio))
+                    _result = "通过" if float(_month_order_floor) > float(order_value) else "不通过"
+                    _data["年收入"].append(_year_income)
+                    _data["月均收入"].append(_month_income)
+                    _data["月供上限"].append(_month_order_floor)
+                    _data["审批"].append(_result)
+                else:
+                    _data["姓名"].pop(-1)
+                    continue
+            else:
+                _year_income = int(_info["年收入"])
+                _month_income = int(float(_info["年收入"])/12)
+                _month_order_floor = int(float(_month_income) / float(check_ratio))
+                _result = "通过" if float(_month_order_floor) > float(order_value) else "不通过"
+                _data["年收入"].append(_year_income)
+                _data["月均收入"].append(_month_income)
+                _data["月供上限"].append(_month_order_floor)
+                _data["审批"].append(_result)
+        df = pd.DataFrame(_data)
+        styler = df.style.applymap(Executor.color_cell)
+        return gr.DataFrame(styler)
+
+    @classmethod
+    def markdown2json(cls,text):
+        pattern = r'^```json([\s\S]*?)(```|\Z)'
+        matches = re.findall(pattern, text, re.MULTILINE)
+        json_dicts = []
+        for json_text in matches:
+            print(f"[DEBUG] json_text:{json_text}")
+            try:
+                if isinstance(json_text,tuple):
+                    json_text = json_text[0]
+                json_dict = json.loads(json_text.strip())
+                json_dicts.append(json_dict)
+            except json.JSONDecodeError:
+                print(f"[ERROR] {text} 不是一个JSON！")    
+        return json_dicts
 
     @classmethod
     def process_select_fn(cls,img,extract_fields):
@@ -226,3 +295,4 @@ class Executor:
         _t = Thread(target = _dispatch)
         _t.start()
         print("[INFO] dispatcher thread is working...") 
+

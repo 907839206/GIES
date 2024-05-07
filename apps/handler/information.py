@@ -17,11 +17,21 @@ class InformationHandler(BaseHandler):
 
     @staticmethod
     def postprocess(answer_text):
-        pattern = r'^```json([\s\S]*?)```'
+        pattern = r'^```json([\s\S]*?)(```|\Z)'
         match = re.match(pattern, answer_text)
         if match:
             json_text = match.group(1)
             return json_text
+        else:
+            return answer_text
+
+    @staticmethod
+    def extract_markdown(answer_text):
+        pattern = '```json\n[\{|\[](?:\n|.)+[\}|\]]\n```'
+        result = re.search(pattern, answer_text)
+        if result:
+            matched_json = result.group()
+            return matched_json
         else:
             return answer_text
 
@@ -76,7 +86,9 @@ class InformationHandler(BaseHandler):
             "max_tokens": request_dict.get("max_tokens")
         }
         ans = cls.llm_service.chat(iglobal.chat_model,system, msg, **gen_conf)
-        ans = (ans[0],cls.postprocess(ans[0]),ans[1])
+        print(f"[DEBUG] ans:{ans[0]}")
+        ans = (cls.extract_markdown(ans[0]),cls.postprocess(ans[0]),ans[1])
         return ans
         
+
 

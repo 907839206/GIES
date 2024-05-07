@@ -49,10 +49,38 @@ with demo:
             {}
             """))
 
+            with gr.Row():
+                _ = gr.Markdown("""
+                ### <h3><span style="color: #e8313e;">业务规则：</span></h3>
+                """)
+            with gr.Row():
+                # checkFiels = gr.Textbox(
+                #     placeholder = "请输入已提取字段", scale=3)
+                # checkOp = gr.Dropdown([">", "<", "="],interactive=True,scale=1)
+                # checkValue = gr.Textbox(
+                #     placeholder = "请输入判断值", scale=3)
+                orderValue = gr.Textbox(
+                    placeholder = "请输入贷款月供", scale=11)
+                checkRatio = gr.Textbox(
+                    placeholder = "月收入/贷款月供 最低比例", scale=11)
+                checkBtn = gr.Button("贷款审批",scale=1)
+
+            with gr.Row():
+                checkRets = gr.DataFrame(interactive=False,
+                                         wrap=True,
+                                         headers=None)
+
         extractBtn.click(Executor.extract_fn,
                         inputs = [img,localFiles,extractFields],
                         outputs = [textbox,localFiles,extractFields])
+        # checkBtn.click(Executor.check_fn,
+        #                inputs = [textbox,checkFiels,checkOp,checkValue],
+        #                outputs = [checkRets])
+        checkBtn.click(Executor.check_income_fn,
+                       inputs = [textbox,orderValue,checkRatio],
+                       outputs = [checkRets])
 
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=8080)
+
