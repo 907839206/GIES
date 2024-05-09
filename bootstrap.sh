@@ -1,1 +1,1 @@
-nohup python /root/GIES/app.py &
+python /root/GIES/app.py
