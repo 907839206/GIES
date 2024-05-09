@@ -127,6 +127,7 @@ class Executor:
     @staticmethod
     def check_income_fn(data,order_value,check_ratio):
         print(f"[DEBUG] data:{data}")
+        _st = time.time()
         data_json = Executor.markdown2json(data)
         if not order_value:
             gr.Warning("请先输入贷款月供！")
@@ -167,6 +168,7 @@ class Executor:
                 _data["审批"].append(_result)
         df = pd.DataFrame(_data)
         styler = df.style.applymap(Executor.color_cell)
+        print(f"[INFO] backprocess time cost:{time.time()-_st}")
         return gr.DataFrame(styler)
 
     @classmethod

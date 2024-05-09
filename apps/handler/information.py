@@ -1,4 +1,4 @@
-import os,logging,re
+import os,logging,re,time
 
 from elasticsearch_dsl import Q
 
@@ -44,7 +44,9 @@ class InformationHandler(BaseHandler):
         extract_fields_str = request_dict.get("extract_fields",None)
         if not fid or not fpth or not os.path.isfile(fpth):
             return {"ec":CodeEnum.Fail,"em":"file not exists","data":{}}
+        _st = time.time()
         infos = iglobal.pic_parse.parse(fpth)
+        print(f"[INFO] ocr time cost:{time.time()-_st}")
         for e in infos:
             e.update({"fid":fid})
         print(f"[INFO] ocr result:{infos}")
@@ -85,8 +87,10 @@ class InformationHandler(BaseHandler):
             "presence_penalty": request_dict.get("presence_penalty"),
             "max_tokens": request_dict.get("max_tokens")
         }
+        _st = time.time()
         ans = cls.llm_service.chat(iglobal.chat_model,system, msg, **gen_conf)
         print(f"[DEBUG] ans:{ans[0]}")
+        print(f"[INFO] llm time cost:{time.time()-_st}")
         ans = (cls.extract_markdown(ans[0]),cls.postprocess(ans[0]),ans[1])
         return ans
         

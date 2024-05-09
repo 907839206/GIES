@@ -12,20 +12,20 @@ with demo:
     """)
     with gr.Row():
         with gr.Column():
-            img = gr.Image("static/10.jpg",
+            img = gr.Image("static/1.jpg",
                             sources=None,
                             show_share_button=False,
                             interactive=False)
             with gr.Row():
-                gr.Examples(["static/1.jpg", 
-                             "static/2.jpg", 
-                             "static/3.jpg",
-                             "static/4.jpg", 
-                             "static/5.jpg", 
-                             "static/6.jpg",
-                             "static/7.jpg", 
-                             "static/8.jpg", 
-                             "static/9.jpg"], 
+                gr.Examples(["static/2.jpg",
+                             "static/11.png",
+                             "static/12.png",
+                             "static/4.jpg",
+                             "static/13.jpg",
+                             "static/14.webp",
+                             "static/7.jpg",
+                             "static/15.webp",
+                             "static/8.jpg"], 
                         img,label=None)
                 localFiles = gr.components.File(label="Upload image",scale=1,file_count="multiple")
         
