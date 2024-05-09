@@ -1,1 +1,0 @@
-python /root/GIES/app.py

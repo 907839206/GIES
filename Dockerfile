@@ -8,4 +8,4 @@ RUN apt update && \
     apt install -y libgl1-mesa-glx
 RUN pip install -r /root/GIES/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN chmod +x /root/GIES/bootstrap.sh
-CMD ["/root/GIES/bootstrap.sh"]
+CMD ["python","/root/GIES/app.py"]
