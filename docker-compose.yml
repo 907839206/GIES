@@ -2,5 +2,8 @@ version: '3.8'
 services:
   gies:
     build: .
+    environment:
+      - API_KEY_EMBEDDING=sk-2c564063b220426fa147e700f683b013
+      - API_KEY_CHAT=sk-2c564063b220426fa147e700f683b013
     ports:
-      - 8081:8081
+      - 8081:8080
