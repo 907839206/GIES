@@ -6,6 +6,8 @@ from executor import Executor,colab_env
 Executor.init()
 demo = gr.Blocks(css = "./static/custom.css")
 
+MODELS = ["qwen-plus-oai","qwen-max-oai","gpt-3.5-turbo"]
+
 with demo:
     gr.Markdown("""
     ### <h2><span style="color: #e8313e;">欢迎体验GIES智能信息提取系统</span></h2>\n
@@ -13,7 +15,7 @@ with demo:
     with gr.Tab("信息抽取"):
         with gr.Row():
             with gr.Column():
-                img = gr.Image("static/1.jpg",
+                img = gr.Image("static/2.jpg",
                                 sources=None,
                                 show_share_button=False,
                                 interactive=False)
@@ -85,9 +87,7 @@ with demo:
             with gr.Column():
                 # 数据选择
                 with gr.Row():
-                    _ = gr.Markdown("""
-                    ### <h3><span style="color: #e8313e;">选择数据：</span></h3>
-                    """)
+                    _ = gr.Markdown("""<h3 style="margin-top:0px;"><span style="color: #e8313e;">1、选择数据：</span></h3>""")
                 with gr.Column(elem_id="add_border"):
                     with gr.Row():
                         img = gr.Image("static/1.jpg",
@@ -96,13 +96,16 @@ with demo:
                                         interactive=False)
                     with gr.Row():
                         gr.Examples(["static/2.jpg",
-                                        "static/11.png"], 
+                                     "static/lpr.jpeg"], 
                                     img,label=None)
             with gr.Column():
                 with gr.Row():
-                    _ = gr.Markdown("""
-                    ### <h3><span style="color: #e8313e;">字段提取：</span></h3>
-                    """)
+                    _ = gr.Markdown("""<h3 style="margin-top:0px;"><span style="color: #e8313e;">2、字段提取：</span></h3>""")
+                    # modelSelected = gr.Dropdown(
+                    #     label="选择模型", choices=MODELS, multiselect=False, value=MODELS[0], interactive=True,
+                    #     show_label=False, container=False, elem_id="model-select-dropdown", filterable=False,scale=2
+                    # )
+                    
                 with gr.Column(elem_id="add_border"):
                     with gr.Row():
                         extractFields = gr.Textbox(
@@ -115,11 +118,17 @@ with demo:
                         ```json
                         {}
                         """))
+                extractBtn.click(Executor.extract_fn_with_model,
+                            inputs = [img,extractFields],
+                            outputs = [textbox])
+                
             with gr.Column():
                 with gr.Row():
-                    _ = gr.Markdown("""
-                    ### <h3><span style="color: #e8313e;">规则处理：</span></h3>
-                    """)
+                    _ = gr.Markdown("""<h3 style="margin-top:0px;"><span style="color: #e8313e;">3、规则处理：</span></h3>""")
+                    modelSelected = gr.Dropdown(
+                        label="选择模型", choices=MODELS, multiselect=False, value=MODELS[0], interactive=True,
+                        show_label=False, container=False, elem_id="model-select-dropdown", filterable=False,scale=2
+                    )
                 with gr.Column(elem_id="add_border"):
                     with gr.Row():
                         businessRule = gr.Textbox(
@@ -127,7 +136,14 @@ with demo:
                                 scale=11)
                     with gr.Row():
                         processBtn = gr.Button("开始处理",scale=1)
-                
+                    with gr.Row():
+                        rulebox = gr.Markdown("{}".format("""处理结果：
+                        ```json
+                        {}
+                        """))
+                processBtn.click(Executor.process_fn_with_ruler,
+                                 inputs=[textbox,businessRule,modelSelected],
+                                 outputs=[rulebox])
 
 
 if __name__ == "__main__":

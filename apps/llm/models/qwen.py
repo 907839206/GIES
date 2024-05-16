@@ -1,8 +1,12 @@
 
 import logging
-from .base import BaseModel
+import hashlib
+import dashscope
 from dashscope import Generation
 from http import HTTPStatus
+import numpy as np
+
+from .base import BaseModel
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

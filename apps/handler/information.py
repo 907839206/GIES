@@ -67,6 +67,7 @@ class InformationHandler(BaseHandler):
         # TODO：提取embd进行相似性检索
         
         # 抽取字段
+        print(f"extract_fields_str:{extract_fields_str}")
         extract_fields_list = re.split(r'[;；]', extract_fields_str)
         extract_fields_list = [
             field.strip() for field in extract_fields_list if field.strip() !=""

@@ -1,3 +1,4 @@
+import os
 
 from werkzeug.utils import secure_filename
 
@@ -29,7 +30,7 @@ class ResourceHandler(BaseHandler):
         image_id = gen_random_str(8)
         full_save_path = os.path.join(
             config.FILESTORE.LOCALPATH.RAWPATH,
-            f"{filename}-{image_id}.{fileext}"
+            f"{filename}-{image_id}.{ext}"
         )
         uploaded_file.save(full_save_path)
         # 先不考虑异步处理了，直接同步吧

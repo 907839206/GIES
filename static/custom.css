@@ -29,3 +29,28 @@
 .padded.svelte-12cmxck{
     padding: 8px!important;
 }
+
+#model-select-dropdown > div[class^="svelte-"] > span[data-testid="block-info"]  {
+    display: none;
+}
+#model-select-dropdown > div, 
+#model-select-dropdown > div > div {
+    height: 100%;
+    background: none;
+}
+.gradio-dropdown > div[class^="svelte-"] > .wrap input {
+    font-weight: bold;
+}
+#model-select-dropdown > div[class^="svelte-"]::before {
+    content: "";
+    background: var(--primary-600);
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    position: absolute;
+    /* left: 2px; */
+    top: calc(50% - 6px);
+}
+#model-select-dropdown {
+    border-style: none!important;
+}

@@ -9,3 +9,4 @@ dashscope
 werkzeug
 elasticsearch_dsl
 gradio
+openai

@@ -16,7 +16,8 @@ sys.path.append(
         "apps"
     )
 )
-from handler import InformationHandler
+from handler import InformationHandler,RuleHandler
+
 from services.utils import gen_uuid
 
 from utils import is_colab
@@ -25,18 +26,13 @@ colab_env = is_colab()
 
 
 class Request:
-    def __init__(self,rid,fid, fpth, extract_fields):
-        self.rid = rid
-        self.fid = fid
-        self.fpth = fpth
-        self.extract_fields = extract_fields
+    def __init__(self,**kwargs):
+        self.kwargs = kwargs
+        self.rid = kwargs.get("rid","")
+        self.fid = kwargs.get("fid","")
 
     def get_json(self):
-        return {
-            "fid": self.fid,
-            "fpth": self.fpth,
-            "extract_fields": self.extract_fields
-        }
+        return self.kwargs
 
 
 class Executor:
@@ -47,7 +43,6 @@ class Executor:
 
     execute_process_num = 5
     timeout = 10 * 1000
-
 
     @classmethod
     def init(cls,*args,**kwargs):
@@ -77,6 +72,24 @@ class Executor:
             ```json
             {}
             """,local_files,extract_fields
+    
+    @staticmethod
+    def extract_fn_with_model(select_img,extract_fields):
+        return Executor.process_select_fn(select_img,extract_fields)
+    
+    @staticmethod
+    def process_fn_with_ruler(data,ruler,model_select):
+        print(f"[DEBUG] process_fn_with_ruler get request:{data} {ruler} {model_select}")
+        response = ""
+        for info in RuleHandler.handler(Request(
+            **{
+                "model":model_select,
+                "question": f"{data} {ruler}",
+                "ruler_name": "general",
+               }
+        )):
+            response += str(info) + "<br>"
+            yield response
 
     @classmethod
     def process_upload_fn(cls, local_files, extract_fields):
@@ -97,7 +110,13 @@ class Executor:
             _fid = _get_fid(_file)
             _fpth = _file
             _extract_fields = extract_fields
-            _task = Request(_request_id,_fid, _fpth, _extract_fields)
+            # _task = Request(_request_id,_fid, _fpth, _extract_fields)
+            _task = Request(**{
+                "rid": _request_id,
+                "fid": _fid,
+                "fpth": _fpth,
+                "extract_fields": _extract_fields
+            })
             cls.task_queue.put(_task)
             cls.recorder[_request_id]["task"][_fid] = tQueue()
         print(f"[INFO] process_upload_fn get task local_files:{local_files}"
@@ -127,7 +146,7 @@ class Executor:
             return "background-color: lightcoral"
         else:
             return ""
-            
+
     @staticmethod
     def check_income_fn(data,order_value,check_ratio):
         print(f"[DEBUG] data:{data}")
@@ -203,7 +222,13 @@ class Executor:
                                     "task":{},
                                     "task_size":1,
                                     "ready":tQueue()}
-        _task = Request(_rid,_fid, _fpth, extract_fields)
+        
+        _task = Request(**{
+            "rid":_rid,
+            "fid":_fid,
+            "fpth":_fpth,
+            "extract_fields":extract_fields
+        })
         print(f"[INFO] add task: {_task.get_json()}")
         cls.task_queue.put(_task)
         cls.recorder[_rid]["task"][_fid] = tQueue()

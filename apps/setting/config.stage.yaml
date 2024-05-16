@@ -9,11 +9,31 @@ CHAT:
   DEFAULT: 
     FACTORY: "QWen"
     NAME: "qwen-plus"
+    API_KEY: ""
 
+  QWEN-PLUS-OAI:
+    FACTORY: "Openai"
+    NAME: "qwen-plus"
+    API_KEY: ""
+    BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+  QWEN-MAX-OAI:
+    FACTORY: "Openai"
+    NAME: "qwen-max"
+    API_KEY: ""
+    BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+  GPT-3.5-TURBO:
+    FACTORY: "Openai"
+    NAME: "qwen-plus"
+    API_KEY: ""
+    BASE_URL: "https://api.chatanywhere.com.cn"
+  
 EMBEDDING:
   DEFAULT:
     FACTORY: "QWen"
     NAME: "text-embedding-v2"
+    API_KEY: ""
 
 
 FILESTORE:
