@@ -20,3 +20,12 @@
 .svelte-b0hvie{
     font-size:30%;
 }
+
+#add_border{
+    border:1px solid var(--border-color-primary);
+    border-radius: var(--block-radius);
+}
+
+.padded.svelte-12cmxck{
+    padding: 8px!important;
+}
