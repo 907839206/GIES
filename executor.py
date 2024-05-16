@@ -19,6 +19,10 @@ sys.path.append(
 from handler import InformationHandler
 from services.utils import gen_uuid
 
+from utils import is_colab
+
+colab_env = is_colab()
+
 
 class Request:
     def __init__(self,rid,fid, fpth, extract_fields):

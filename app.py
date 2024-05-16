@@ -1,7 +1,7 @@
 import numpy as np
 import gradio as gr
 
-from executor import Executor
+from executor import Executor,colab_env
 
 Executor.init()
 demo = gr.Blocks(css = "./static/custom.css")
@@ -82,5 +82,8 @@ with demo:
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=8080)
+    if colab_env:
+        demo.launch(share=True)
+    else:
+        demo.launch(server_name="0.0.0.0", server_port=8080)
 

@@ -1,12 +1,17 @@
 import yaml,os,logging,traceback
 
+from utils import is_colab
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 abspath = os.path.abspath(__file__)
 
 def load_config():
-    env = os.environ.get("ENV","stage")
+    if is_colab():
+        env = "stage"
+    else:
+        env = os.environ.get("ENV","stage")
     full_config_path = os.path.join(
         os.path.dirname(abspath),
         f"config.{env}.yaml"
