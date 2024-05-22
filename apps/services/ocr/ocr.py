@@ -522,7 +522,7 @@ class OCR(object):
             time_dict['all'] = end - start
             return None, None, time_dict
         else:
-            cron_logger.debug("dt_boxes num : {}, elapsed : {}".format(
+            print("dt_boxes num : {}, elapsed : {}".format(
                 len(dt_boxes), elapse))
 
         return zip(self.sorted_boxes(dt_boxes), [
