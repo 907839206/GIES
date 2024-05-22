@@ -96,7 +96,9 @@ with demo:
                                         interactive=False)
                     with gr.Row():
                         gr.Examples(["static/2.jpg",
-                                     "static/lpr.jpeg"], 
+                                     "static/lpr.jpeg",
+                                     "static/order1.jpg",
+                                     "static/12.png"], 
                                     img,label=None)
             with gr.Column():
                 with gr.Row():

@@ -1,0 +1,2 @@
+
+from .table_structure_recognizer import Tsr,get_boxes_recs
