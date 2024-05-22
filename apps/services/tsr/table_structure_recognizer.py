@@ -46,6 +46,12 @@ class Tsr:
         content_list = meta_dict["character"].splitlines()
         return content_list
 
+    def __get_input_names(self):
+        return [v.name for v in self.predictor.get_inputs()]
+    
+    def __get_output_names(self):
+        return [v.name for v in self.predictor.get_outputs()]
+
     def __build_pre_process_list(self):
         resize_op = {
             "ResizeTableImage": {
@@ -69,7 +75,7 @@ class Tsr:
 
     def __build_preprocess_op_list(self):
         ops = []
-        for operator in self.pre_process_list:
+        for operator in self.preprocess_list:
             assert (
                 isinstance(operator, dict) and len(operator) == 1
             ), "yaml format error"
@@ -156,7 +162,10 @@ class Tsr:
                 return None, 0
             img = np.expand_dims(img, axis=0)
             img = img.copy()
-            outputs = self.predictor(img)
+
+            input_dict = dict(zip(self.__get_input_names(), [img]))
+            outputs = self.predictor.run(self.__get_output_names(), input_dict)
+
             preds = {"loc_preds": outputs[0], "structure_probs": outputs[1]}
             shape_list = np.expand_dims(data[-1], axis=0)
             post_result = self.postprocess(preds, [shape_list])
@@ -171,4 +180,5 @@ if __name__=="__main__":
         Image.open(filepath)
     ]
     res_list = model(image_list)
+    print(res_list)
 
