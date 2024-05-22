@@ -4,7 +4,17 @@ import os
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
+from copy import deepcopy
+
+import sys
+sys.path.append(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../../"
+    )
+)
+
 
 from setting import config
 from services.ocr import load_model
@@ -191,13 +201,50 @@ class LayoutRecognize:
 
         return res
 
-if __name__ == "__main__":
+    def mask_entity(self,image_list,res_list,threshold = 0.5,entity=["table","figure"]):
+        image_list = deepcopy(image_list)
+        for idx,(image,res) in enumerate(list(zip(image_list,res_list))):
+            for _,info in enumerate(res):
+                if info["type"] in entity and info["score"] > threshold:
+                    # mask
+                    draw = ImageDraw.Draw(image)
+                    x,t,y,b = info["bbox"]
+                    draw.rectangle([math.ceil(x), math.ceil(t), math.ceil(y), math.ceil(b)], fill=(255, 255, 255))
+                    image_list[idx] = image
+        return image_list
+    
+    def crop_tables(self,image_list,res_list,threshold = 0.5):
+        table_list = []
+        for idx, (image,res) in enumerate(list(zip(image_list,res_list))):
+            image_table_list = []
+            for _,info in enumerate(res):
+                if info["type"] == "table" and info["score"] > threshold:
+                    copy_img = deepcopy(image)
+                    x,t,y,b = info["bbox"]
+                    area = (math.ceil(x),math.ceil(t),math.ceil(y),math.ceil(b))
+                    crop_img = copy_img.crop(area)
+                    image_table_list.append(crop_img)
+            table_list.append(image_table_list)
+        return table_list
 
-    filepath = ""
+if __name__ == "__main__":
+    filepath = "/workspaces/GIES/static/order1.jpg"
     _model_path = os.path.join(get_project_path(),config.OCR.MODEL_PATH)
     model = LayoutRecognize(_model_path)
-    images = [
+    image_list = [
         Image.open(filepath)
     ]
-    res = model(images)
-    print(res)
+    res_list = model(image_list)
+    # for _,info in enumerate(res_list):
+    #     for _info in info:
+    #         print(_info)
+    mask_image_list = model.mask_entity(image_list,res_list)
+    for idx, img in enumerate(mask_image_list):
+        filesave = f"save_{idx}.jpg"
+        img.save(filesave)
+
+    crop_image_list = model.crop_tables(image_list,res_list)
+    for idx, img in enumerate(crop_image_list):
+        for jdx,_img in enumerate(img):
+            filesave = f"save_crop_{idx}_{jdx}.jpg"
+            _img.save(filesave)
