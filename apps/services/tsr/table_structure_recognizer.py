@@ -21,7 +21,7 @@ class Tsr:
         assert model_dir != None,"model dir can not be None!"
         self.model_dir = model_dir
         self.predictor,_ = load_model(model_dir,"tsr")
-        self.character = self.predictor.get_metadata()
+        self.character = self.__get_meta()
         self.init()
 
         self.table_max_len = 488
@@ -40,6 +40,11 @@ class Tsr:
         for i, char in enumerate(self.character):
             self.dict[char] = i
         self.td_token = ["<td>", "<td", "<td></td>"]
+
+    def __get_meta(self):
+        meta_dict = self.predictor.get_modelmeta().custom_metadata_map
+        content_list = meta_dict[key].splitlines()
+        return content_list
 
     def __build_pre_process_list(self):
         resize_op = {
