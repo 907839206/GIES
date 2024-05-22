@@ -6,7 +6,7 @@ sys.path.append(
     )
 )
 
-
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -144,6 +144,9 @@ class Tsr:
 
     def __call__(self,image_list):
         for _,img in enumerate(image_list):
+            if isinstance(img,Image.Image):
+                img = np.array(img)
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             h, w = img.shape[:2]
             print(f" ----> h:{h}  w:{w}")
             data = {"image":img}
