@@ -20,7 +20,7 @@ class Tsr:
     def __init__(self,model_dir=None):
         assert model_dir != None,"model dir can not be None!"
         self.model_dir = model_dir
-        self.predictor,_ = load_model(model_dir,"tsr")
+        self.predictor,_ = load_model(model_dir,"ch_pp_tsr")
         self.character = self.__get_meta()
         self.init()
 
