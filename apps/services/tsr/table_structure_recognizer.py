@@ -43,7 +43,7 @@ class Tsr:
 
     def __get_meta(self):
         meta_dict = self.predictor.get_modelmeta().custom_metadata_map
-        content_list = meta_dict[key].splitlines()
+        content_list = meta_dict["character"].splitlines()
         return content_list
 
     def __build_pre_process_list(self):
