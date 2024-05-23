@@ -55,23 +55,28 @@ class Executor:
         return ""
 
     @staticmethod
-    def extract_fn(select_img,local_files,extract_fields):
+    def extract_fn(select_img,extract_fields):
+        local_files = []
+        print(f"select_img:{select_img}")
+        print(f"extract_fields:{extract_fields}")
+        for filepath,_ in select_img:
+            local_files.append(filepath)
         if len(extract_fields) == 0:
             return """
             ```json
             {}
-            """,local_files,extract_fields
+            """,extract_fields
         if local_files is not None and len(local_files) != 0:
             return Executor.process_upload_fn(local_files,
-                                            extract_fields),[],extract_fields
+                                            extract_fields),extract_fields
         elif select_img is not None:
-            return Executor.process_select_fn(select_img,extract_fields),[],extract_fields
+            return Executor.process_select_fn(select_img,extract_fields),extract_fields
         else:
             gr.Warning("未选中任何图片，请首先选中/上传图片文件！")
             return """
             ```json
             {}
-            """,local_files,extract_fields
+            """,extract_fields
     
     @staticmethod
     def extract_fn_with_model(select_img,extract_fields):

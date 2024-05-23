@@ -8,12 +8,12 @@ from PIL import Image, ImageDraw
 from copy import deepcopy
 
 import sys
-# sys.path.append(
-#     os.path.join(
-#         os.path.dirname(os.path.abspath(__file__)),
-#         "../../"
-#     )
-# )
+sys.path.append(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../../"
+    )
+)
 
 
 from setting import config
@@ -149,6 +149,7 @@ class LayoutRecognize:
         boxes = np.squeeze(boxes).T
         # Filter out object confidence scores below threshold
         scores = np.max(boxes[:, 4:], axis=1)
+        print(f"thr:{thr}")
         boxes = boxes[scores > thr, :]
         scores = scores[scores > thr]
         if len(boxes) == 0: return []
@@ -179,7 +180,7 @@ class LayoutRecognize:
         } for i in indices]
 
 
-    def __call__(self, image_list, thr=0.7, batch_size=16):
+    def __call__(self, image_list, thr=0.5, batch_size=16):
         res = []
         imgs = []
         for i in range(len(image_list)):
@@ -227,6 +228,19 @@ class LayoutRecognize:
             table_list.append(image_table_list)
         return table_list
 
+import random,math
+def draw_bbox(image, bbox,label, color=(0, 255, 0), thickness=2,font_scale=0.5, font=cv2.FONT_HERSHEY_SIMPLEX):
+  print(f"bbox:{bbox}")
+  x0, y0, x1, y1 = bbox
+  x0=int(x0)
+  y0=int(y0)
+  x1=int(x1)
+  y1=int(y1)
+
+  cv2.rectangle(image, (math.ceil(x0), math.ceil(y0)), (math.ceil(x1), math.ceil(y1)), color, thickness)
+  cv2.putText(image, label, (x1-random.randint(0, (x1-x0)), y0 - 5), font, font_scale, color, thickness)
+  return image
+
 if __name__ == "__main__":
     filepath = "/workspaces/GIES/static/order1.jpg"
     _model_path = os.path.join(get_project_path(),config.OCR.MODEL_PATH)
@@ -234,17 +248,29 @@ if __name__ == "__main__":
     image_list = [
         Image.open(filepath)
     ]
+
     res_list = model(image_list)
-    # for _,info in enumerate(res_list):
-    #     for _info in info:
-    #         print(_info)
+
+    img2 = np.array(image_list[0])
+    img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2BGR)
+    
+    for _,info in enumerate(res_list):
+        for _info in info:
+            img2 = draw_bbox(img2,_info['bbox'],_info['type'])
+            print(_info)
+    cv2.imwrite("rectangle.jpg",img2)
+    
     mask_image_list = model.mask_entity(image_list,res_list)
     for idx, img in enumerate(mask_image_list):
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
         filesave = f"save_{idx}.jpg"
         img.save(filesave)
 
     crop_image_list = model.crop_tables(image_list,res_list)
     for idx, img in enumerate(crop_image_list):
         for jdx,_img in enumerate(img):
+            if _img.mode == 'RGBA':
+                _img = _img.convert('RGB')
             filesave = f"save_crop_{idx}_{jdx}.jpg"
             _img.save(filesave)
