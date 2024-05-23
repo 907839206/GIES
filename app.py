@@ -11,20 +11,16 @@ MODELS = ["qwen-plus-oai","qwen-max-oai","gpt-3.5-turbo"]
 data = ["static/2.jpg",
         "static/11.png",
         "static/12.png",
-        "static/4.jpg",
         "static/13.jpg",
+        "static/4.jpg",
         "static/14.webp",
         "static/7.jpg",
         "static/15.webp",
-        "static/8.jpg"]
+        "static/8.jpg",
+        "static/1_1.jpg",
+        "static/4_1.jpg"]
 
 def gallery_select_trigger(evt: gr.SelectData):
-    # print(f"gallery select was call:{evt}")
-    # selected_index = evt.index
-    # print(f"raw selected index:{evt.index}")
-
-    # print(f"dir :{dir(evt)}")
-    # print(f"value:{evt.value}")
     _img_path = evt.value["image"]["path"]
     return [_img_path]
 
@@ -32,6 +28,14 @@ def gallery_select_trigger(evt: gr.SelectData):
 def gallery_upload_trigger(gallery):
     print(f"gallery upload was call:{gallery}")
     return gallery
+
+def auth(username,password):
+    white_list = [
+        ("test","test123#@!")
+    ]
+    if (username,password) in white_list:
+        return True
+    return False
 
 with demo:
     gr.Markdown("""
@@ -194,5 +198,5 @@ if __name__ == "__main__":
     if colab_env:
         demo.launch(share=True)
     else:
-        demo.launch(server_name="0.0.0.0", server_port=8080)
+        demo.launch(server_name="0.0.0.0", server_port=8080,auth=auth)
 
