@@ -54,3 +54,11 @@
 #model-select-dropdown {
     border-style: none!important;
 }
+
+#component-4{
+    gap: 0px;
+}
+
+#component-6{
+    text-align: right;
+}

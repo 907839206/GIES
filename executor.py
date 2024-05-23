@@ -55,7 +55,10 @@ class Executor:
         return ""
 
     @staticmethod
-    def extract_fn(select_img,local_files,extract_fields):
+    def extract_fn(select_img,extract_fields):
+        local_files = None
+        print(f"select_img:{select_img}")
+        print(f"extract_fields:{extract_fields}")
         if len(extract_fields) == 0:
             return """
             ```json

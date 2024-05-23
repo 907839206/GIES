@@ -51,7 +51,7 @@ class PictureParser(BaseParser):
 
             # Layout
             _img_list = [_img]
-            _res_list = self.__layout(_img_list)
+            _res_list = self.__layout(_img_list,thr=self.__threshold)
             print(f"[DEBUG] _res_list:{_res_list}")
             _use_tsr = self.__check_layout(_res_list)
             _mask_img_list = self.__layout.mask_entity(_img_list,_res_list,self.__threshold)
