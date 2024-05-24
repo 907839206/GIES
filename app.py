@@ -2,6 +2,7 @@ import numpy as np
 import gradio as gr
 
 from executor import Executor,colab_env
+from executor import layout_select_list as LAYOUTS
 
 Executor.init()
 demo = gr.Blocks(css = "./static/custom.css")
@@ -63,33 +64,13 @@ with demo:
                 
                 _ = gr.Markdown("""<span style="color: #e8313e;">* </span><span style="color:gray;font-size:smaller;">点击右上方【 X 】可自行上传图片<span>
                     """)
-                # img = gr.Image("static/2.jpg",
-                #                 sources="upload",
-                #                 show_share_button=False,
-                #                 interactive=True,
-                #                 height=400,
-                #                 visible=False)
-                # with gr.Row():
-                    # gr.Examples(["static/2.jpg",
-                    #             "static/11.png",
-                    #             "static/12.png",
-                    #             "static/4.jpg",
-                    #             "static/13.jpg",
-                    #             "static/14.webp",
-                    #             "static/7.jpg",
-                    #             "static/15.webp",
-                    #             "static/8.jpg"], 
-                    #         img,label=None)
-                    # localFiles = gr.components.File(label="Upload image",
-                    #                                 scale=1,
-                    #                                 file_count="multiple",
-                    #                                 file_types=["image"],visible=False)
             
             with gr.Column():
                 with gr.Row():
-                    _ = gr.Markdown("""
-                    ### <h3><span style="color: #e8313e;">关键字段提取：</span></h3>
-                    """)
+                    _ = gr.Markdown("""<h3><span style="color: #e8313e;">关键字段提取：</span></h3>""")
+                    layoutSelect = gr.Dropdown(
+                        label="选择格式", choices=LAYOUTS, multiselect=False, value=LAYOUTS[0], interactive=True,
+                        show_label=False, container=False, elem_id="model-select-dropdown", filterable=False,scale=0.5)
                 with gr.Row():
                     extractFields = gr.Textbox(
                         placeholder="输入待提取字段名称,以“;”分隔,例如：姓名;月收入;年收入",
@@ -122,7 +103,7 @@ with demo:
                 #                             headers=None)
 
             extractBtn.click(Executor.extract_fn,
-                            inputs = [output_gallery,extractFields],
+                            inputs = [output_gallery,extractFields,layoutSelect],
                             outputs = [textbox,extractFields])
 
             # checkBtn.click(Executor.check_income_fn,
@@ -134,6 +115,9 @@ with demo:
                 # 数据选择
                 with gr.Row():
                     _ = gr.Markdown("""<h3 style="margin-top:0px;"><span style="color: #e8313e;">1、选择数据：</span></h3>""")
+                    layoutSelect = gr.Dropdown(
+                        label="选择格式", choices=LAYOUTS, multiselect=False, value=LAYOUTS[0], interactive=True,
+                        show_label=False, container=False, elem_id="model-select-dropdown", filterable=False,scale=0.5)
                 with gr.Column(elem_id="add_border"):
                     with gr.Row():
                         img = gr.Image("static/1.jpg",
@@ -149,10 +133,6 @@ with demo:
             with gr.Column():
                 with gr.Row():
                     _ = gr.Markdown("""<h3 style="margin-top:0px;"><span style="color: #e8313e;">2、字段提取：</span></h3>""")
-                    # modelSelected = gr.Dropdown(
-                    #     label="选择模型", choices=MODELS, multiselect=False, value=MODELS[0], interactive=True,
-                    #     show_label=False, container=False, elem_id="model-select-dropdown", filterable=False,scale=2
-                    # )
                     
                 with gr.Column(elem_id="add_border"):
                     with gr.Row():
@@ -167,7 +147,7 @@ with demo:
                         {}
                         """))
                 extractBtn.click(Executor.extract_fn_with_model,
-                            inputs = [img,extractFields],
+                            inputs = [img,extractFields,layoutSelect],
                             outputs = [textbox])
                 
             with gr.Column():
@@ -175,8 +155,7 @@ with demo:
                     _ = gr.Markdown("""<h3 style="margin-top:0px;"><span style="color: #e8313e;">3、规则处理：</span></h3>""")
                     modelSelected = gr.Dropdown(
                         label="选择模型", choices=MODELS, multiselect=False, value=MODELS[0], interactive=True,
-                        show_label=False, container=False, elem_id="model-select-dropdown", filterable=False,scale=2
-                    )
+                        show_label=False, container=False, elem_id="model-select-dropdown", filterable=False,scale=1)
                 with gr.Column(elem_id="add_border"):
                     with gr.Row():
                         businessRule = gr.Textbox(

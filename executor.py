@@ -17,13 +17,17 @@ sys.path.append(
     )
 )
 from handler import InformationHandler,RuleHandler
-
 from services.utils import gen_uuid
-
 from utils import is_colab
+from constant import LayoutType
 
 colab_env = is_colab()
 
+layout_select_list = [
+    LayoutType.general.value,
+    LayoutType.text.value,
+    LayoutType.table.value,
+]
 
 class Request:
     def __init__(self,**kwargs):
@@ -55,7 +59,7 @@ class Executor:
         return ""
 
     @staticmethod
-    def extract_fn(select_img,extract_fields):
+    def extract_fn(select_img,extract_fields,layout_type = LayoutType.general.value):
         local_files = []
         print(f"select_img:{select_img}")
         print(f"extract_fields:{extract_fields}")
@@ -68,9 +72,9 @@ class Executor:
             """,extract_fields
         if local_files is not None and len(local_files) != 0:
             return Executor.process_upload_fn(local_files,
-                                            extract_fields),extract_fields
+                                            extract_fields,layout_type),extract_fields
         elif select_img is not None:
-            return Executor.process_select_fn(select_img,extract_fields),extract_fields
+            return Executor.process_select_fn(select_img,extract_fields,layout_type),extract_fields
         else:
             gr.Warning("未选中任何图片，请首先选中/上传图片文件！")
             return """
@@ -79,8 +83,9 @@ class Executor:
             """,extract_fields
     
     @staticmethod
-    def extract_fn_with_model(select_img,extract_fields):
-        return Executor.process_select_fn(select_img,extract_fields)
+    def extract_fn_with_model(select_img,extract_fields,layout_type = LayoutType.general.value):
+        print(f"layout_type:{layout_type}")
+        return Executor.process_select_fn(select_img,extract_fields,layout_type)
     
     @staticmethod
     def process_fn_with_ruler(data,ruler,model_select):
@@ -97,7 +102,7 @@ class Executor:
             yield response
 
     @classmethod
-    def process_upload_fn(cls, local_files, extract_fields):
+    def process_upload_fn(cls, local_files, extract_fields,layout_type):
         def _get_fid(filepath):
             return os.path.split(
                 os.path.dirname(filepath)
@@ -120,7 +125,8 @@ class Executor:
                 "rid": _request_id,
                 "fid": _fid,
                 "fpth": _fpth,
-                "extract_fields": _extract_fields
+                "extract_fields": _extract_fields,
+                "layout_type":layout_type
             })
             cls.task_queue.put(_task)
             cls.recorder[_request_id]["task"][_fid] = tQueue()
@@ -216,7 +222,7 @@ class Executor:
         return json_dicts
 
     @classmethod
-    def process_select_fn(cls,img,extract_fields):
+    def process_select_fn(cls,img,extract_fields,layout_type= LayoutType.general.value):
         print(f"[DEBUG] process_select_fn type img:{type(img)} extract_fields:{extract_fields}")
         _fid = gen_uuid()
         _rid = gen_uuid()
@@ -232,7 +238,8 @@ class Executor:
             "rid":_rid,
             "fid":_fid,
             "fpth":_fpth,
-            "extract_fields":extract_fields
+            "extract_fields":extract_fields,
+            "layout_type":layout_type
         })
         print(f"[INFO] add task: {_task.get_json()}")
         cls.task_queue.put(_task)

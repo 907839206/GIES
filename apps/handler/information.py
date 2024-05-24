@@ -3,8 +3,7 @@ import os,logging,re,time
 from elasticsearch_dsl import Q
 
 from .base import BaseHandler
-from constant import CodeEnum,iglobal
-from constant import iglobal
+from constant import CodeEnum,iglobal,LayoutType
 from llm import ModelService
 
 
@@ -42,10 +41,11 @@ class InformationHandler(BaseHandler):
         fid = request_dict.get("fid",None)
         fpth = request_dict.get("fpth",None)
         extract_fields_str = request_dict.get("extract_fields",None)
+        layout_type = request_dict.get("layout_type",LayoutType.general.value)
         if not fid or not fpth or not os.path.isfile(fpth):
             return {"ec":CodeEnum.Fail,"em":"file not exists","data":{}}
         _st = time.time()
-        infos = iglobal.pic_parse.parse(fpth)
+        infos = iglobal.pic_parse.parse(fpth,layout_type)
         print(f"[INFO] ocr time cost:{time.time()-_st}")
         for e in infos:
             e.update({"fid":fid})

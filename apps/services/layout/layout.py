@@ -242,7 +242,7 @@ def draw_bbox(image, bbox,label, color=(0, 255, 0), thickness=2,font_scale=0.5, 
   return image
 
 if __name__ == "__main__":
-    filepath = "/workspaces/GIES/static/order1.jpg"
+    filepath = "/workspaces/GIES/static/lpr.jpeg"
     _model_path = os.path.join(get_project_path(),config.OCR.MODEL_PATH)
     model = LayoutRecognize(_model_path)
     image_list = [
