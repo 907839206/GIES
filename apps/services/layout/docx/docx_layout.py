@@ -5,11 +5,21 @@ import cv2
 import torch 
 import time
 import os
+import json
 
-from .model import create_model,load_model
-from .image import get_affine_transform, transform_preds
-from .decode import ctdet_4ps_decode, ctdet_cls_decode
+import sys
+sys.path.append(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../../"
+    )
+)
 
+
+from model import create_model,load_model
+from image import get_affine_transform, transform_preds
+from decode import ctdet_4ps_decode, ctdet_cls_decode
+from wrapper import wrap_result
 
 def ctdet_4ps_post_process(dets, c, s, h, w, num_classes):
     # dets: batch x max_dets x dim
@@ -186,8 +196,8 @@ class Detector:
             # add sub
             wh_sub = output['wh_sub']
             reg_sub = output['reg_sub'] if self.reg_offset else None
-            
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             # forward_time = time.time()
             # return dets [bboxes, scores, clses]
             dets, inds = ctdet_4ps_decode(hm, wh, reg=reg, K=self.K)
@@ -212,7 +222,7 @@ class Detector:
             corner = 0
         return output, dets, dets_sub
 
-    def postprocess(self, dets, corner, meta, scale=1):
+    def postprocess(self, dets, meta, scale=1):
         if self.nms:
             detn = pnms(dets[0], self.scores_thresh)
             if detn.shape[0] > 0:
@@ -233,7 +243,7 @@ class Detector:
             for j in range(1, self.num_classes + 1):
                 ret[j] = np.array([0] * k, dtype=np.float32)  # .reshape(-1, k)
             dets.append(ret)
-        return dets[0], corner
+        return dets[0]
 
 
     def Duplicate_removal(self, results):
@@ -305,13 +315,14 @@ class Detector:
             # import ipdb;ipdb.set_trace()
             # images = np.load('data.npy').astype(np.float32)
             # images = torch.from_numpy(images)
-            
             images = images.to(self.device)
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             # pre_process_time = time.time()
             # pre_time += pre_process_time - scale_start_time
             output, dets, dets_sub = self.process(images)
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             # net_time += forward_time - pre_process_time
             # decode_time = time.time()
             # dec_time += decode_time - forward_time
@@ -319,17 +330,18 @@ class Detector:
             # if self.opt.debug >= 2:
             #     self.debug(debugger, images, dets, output, scale)
 
-            dets, corner = self.postprocess(dets, corner, meta, scale)
+            dets = self.postprocess(dets, meta, scale)
             for j in range(1, self.num_classes + 1):
                 dets[j] = self.Duplicate_removal(dets[j])
                 
             # add sub
-            dets_sub, corner = self.postprocess(dets_sub, corner, meta, scale)
+            dets_sub = self.postprocess(dets_sub, meta, scale)
             for j in range(1, self.num_classes + 1):
                 dets_sub[j] = self.Duplicate_removal(dets_sub[j])
                 
-            # import ipdb;ipdb.set_trace()   
-            torch.cuda.synchronize()
+            # import ipdb;ipdb.set_trace()  
+            if torch.cuda.is_available(): 
+                torch.cuda.synchronize()
             # post_process_time = time.time()
             # post_time += post_process_time - decode_time
             dets[12] = dets_sub[12]
@@ -337,7 +349,8 @@ class Detector:
             detections.append(dets)
 
         results = self.merge_outputs(detections)
-        torch.cuda.synchronize()
+        if torch.cuda.is_available(): 
+            torch.cuda.synchronize()
 
         # end_time = time.time()
         # merge_time += end_time - post_process_time
@@ -356,7 +369,6 @@ class Detector:
         #         'post': post_time, 'merge': merge_time, 'output': output}
         return {
             "results": results,
-            "corner": corner,
             "output": output
         }
 
@@ -369,6 +381,31 @@ class DocLayoutReconize:
         model_path = os.path.join(model_dir,"DocXLayout_231012.pth")
         self.detector = Detector(model_path)
 
+    def convert_eval_format(self, all_bboxes, opt):
+        layout_detection_items = []
+        subfield_detection_items = []
+        for cls_ind in all_bboxes:
+            for box in all_bboxes[cls_ind]:
+                if box[8] < opt:
+                    continue
+                pts = np.round(box).tolist()[:8]
+                score = box[8]
+                category_id = box[9]
+                direction_id = box[10]
+                secondary_id = box[11]
+                detection = {
+                    "category_id": int(category_id),
+                    # "secondary_id": int(secondary_id),
+                    # "direction_id": int(direction_id),
+                    "poly": pts,
+                    "score": float("{:.2f}".format(score))
+                }
+                if cls_ind in (12,13):
+                    subfield_detection_items.append(detection)
+                else:
+                    layout_detection_items.append(detection)
+        return layout_detection_items, subfield_detection_items
+    
     def __call__(self,image_list):
         """
         image_list: List[PIL.Image]
@@ -378,8 +415,52 @@ class DocLayoutReconize:
             img = np.array(img)
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             result = self.detector.run(img)
-            print(result)
+            layout_detection_info, subfield_detection_info = self.convert_eval_format(result['results'], 0.5)
+            result = {"code":200,"layout_dets":layout_detection_info,"subfield_dets":subfield_detection_info}
+            return result
 
 
+def draw_pic(img,lay_res):
+    import cv2
+    infos =  lay_res["layouts"]
+    img_pil = Image.open(img)
 
+    img_cv = np.array(img_pil)
+    image = cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR)
+
+    # image =  cv2.imread(img_cv)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.5
+    font_thickness = 1
+    color = (0, 255, 0)
+    text_color = (0, 0, 255)
+    thickness = 1
+    for _info in infos:
+        category = _info["category"]
+        pts = _info["pts"]
+        confidence = _info["confidence"]
+        x0,y0,x1,y1,x2,y2,x3,y3 = pts
+        cv2.rectangle(image, (int(x0), int(y0)), (int(x2), int(y2)), color, thickness)
+        cv2.putText(image, category, (int(x0), int(y0)), font, font_scale, text_color, font_thickness, lineType=cv2.LINE_AA)
+    return image
+
+if __name__=="__main__":
+    from PIL import Image
+    model_dir = "/workspaces/GIES/apps/services/ocr/models"
+    image_path = "/workspaces/GIES/static/paper3.png"
+
+    obj = DocLayoutReconize(model_dir)
+    image = Image.open(image_path)
+    resp = obj([image])
+    print(resp)
+
+    map_info = json.load(open('map_info.json'))
+    category_map = {}
+    for cate, idx in map_info["huntie"]["primary_map"].items():
+        category_map[idx] = cate
+    DocXLayoutInfo = wrap_result(resp, category_map)
+    print(f"DocXLayoutInfo:{DocXLayoutInfo}")
+
+    img = draw_pic(image_path,DocXLayoutInfo)
+    cv2.imwrite("./test_ret2.jpg",img)
     
