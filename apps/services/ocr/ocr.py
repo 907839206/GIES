@@ -5,11 +5,12 @@ import time
 import os
 
 from .operators import *
+# from operators import *
 import numpy as np
 import onnxruntime as ort
 
 from .postprocess import build_post_process
-
+# from postprocess import build_post_process
 import logging
 
 log = logging.getLogger(__name__)
@@ -551,6 +552,7 @@ class OCR(object):
         start = time.time()
         ori_im = img.copy()
         dt_boxes, elapse = self.text_detector(img)
+        # print(f"[DEBUG] ocr detect res:{dt_boxes}")
         time_dict['det'] = elapse
 
         if dt_boxes is None:
@@ -570,6 +572,7 @@ class OCR(object):
             img_crop_list.append(img_crop)
 
         rec_res, elapse = self.text_recognizer(img_crop_list)
+        # print(f"[DEBUG] ocr recog res:{rec_res}")
         time_dict['rec'] = elapse
         log.debug("rec_res num  : {}, elapsed : {}".format(
             len(rec_res), elapse))
@@ -583,3 +586,35 @@ class OCR(object):
         end = time.time()
         time_dict['all'] = end - start
         return list(zip([a.tolist() for a in filter_boxes], filter_rec_res))
+
+if __name__=="__main__":
+
+    import cv2
+
+    def draw_pic(img,infos):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.5
+        font_thickness = 1
+        color = (0, 255, 0)
+        text_color = (0, 0, 255)
+        thickness = 1
+        for info in infos:
+            print(f"info:{info}")
+            info = info[0]
+            x0,y0,x1,y1,x2,y2,x3,y3 = info[0][0],info[0][1],info[1][0],info[1][1],info[2][0],info[2][1],info[3][0],info[3][1]
+            cv2.rectangle(img, (int(x0), int(y0)), (int(x2), int(y2)), color, thickness)
+            cv2.putText(img, "box", (int(x0), int(y0)), font, font_scale, text_color, font_thickness, lineType=cv2.LINE_AA)
+        return img
+
+    model_dir = "/workspaces/GIES/apps/services/ocr/models"
+    fileapth= "/workspaces/GIES/apps/services/layout/docx/test_1717249023.6431077.jpg"
+    ocr = OCR(model_dir)
+    img = cv2.imread(fileapth)
+
+    img = add_white_border(img,50,30)
+
+
+    resp = ocr(img)
+
+    img_draw = draw_pic(img,resp)
+    cv2.imwrite("ocr_res.jpg",img_draw)
