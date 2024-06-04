@@ -23,8 +23,6 @@ from image import get_affine_transform, transform_preds
 from decode import ctdet_4ps_decode, ctdet_cls_decode
 from wrapper import wrap_result
 
-from services.ocr import OCR
-from services.tsr import Tsr
 
 from recovery_to_doc import sorted_layout_boxes, convert_info_docx,merge_text_in_line
 
@@ -380,8 +378,6 @@ class Detector:
         }
 
 
-
-
 class DocLayoutReconize:
     def __init__(self, model_dir=None):
         assert model_dir != None,("model dir must be not None!")
@@ -427,153 +423,28 @@ class DocLayoutReconize:
             return result
 
 
-def draw_pic(img,lay_res):
-    import cv2
-    infos =  lay_res["layouts"]
-    img_pil = Image.open(img)
-
-    img_cv = np.array(img_pil)
-    image = cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR)
-
-    # image =  cv2.imread(img_cv)
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 0.5
-    font_thickness = 1
-    color = (0, 255, 0)
-    text_color = (0, 0, 255)
-    thickness = 1
-    for _info in infos:
-        category = _info["category"]
-        pts = _info["pts"]
-        confidence = _info["confidence"]
-        x0,y0,x1,y1,x2,y2,x3,y3 = pts
-        cv2.rectangle(image, (int(x0), int(y0)), (int(x2), int(y2)), color, thickness)
-        cv2.putText(image, category, (int(x0), int(y0)), font, font_scale, text_color, font_thickness, lineType=cv2.LINE_AA)
-    return image
-
-
-class LayoutRecovery:
-    def __init__(self,model_dir):
-        self.__ocr = OCR(model_dir)
-        self.__tsr = Tsr(model_dir)
-
-    def __add_white_border(self,image, top_bottom, left_right):
-        if isinstance(image,np.ndarray):
-            height, width = image.shape[:2]
-            new_height = height + 2*top_bottom
-            new_width = width + 2*left_right
-            bordered_image = np.ones((new_height, new_width, 3), dtype=np.uint8) * 255  # 255代表白色
-            start_y = top_bottom
-            start_x = left_right
-            bordered_image[start_y:start_y+height, start_x:start_x+width] = image
-            return bordered_image
+    def draw_pic(self,img,lay_res):
+        if isinstance(img,Image.Image):
+            img_cv = np.array(img)
+            image = cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR)
         else:
-            width, height = image.size
-            new_width = width + left_right * 2
-            new_height = height + top_bottom * 2
-            bordered_image = Image.new('RGB', (new_width, new_height), color='white')
-            bordered_image.paste(image, (left_right, top_bottom))
-            return bordered_image
+            image = img
+        infos =  lay_res["layouts"]
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.5
+        font_thickness = 1
+        color = (0, 255, 0)
+        text_color = (0, 0, 255)
+        thickness = 1
+        for _info in infos:
+            category = _info["category"]
+            pts = _info["pts"]
+            _ = _info["confidence"]
+            x0,y0,_,_,x2,y2,_,_ = pts
+            cv2.rectangle(image, (int(x0), int(y0)), (int(x2), int(y2)), color, thickness)
+            cv2.putText(image, category, (int(x0), int(y0)), font, font_scale, text_color, font_thickness, lineType=cv2.LINE_AA)
+        return image
 
-    def __crop_img(self,raw_image,region,expand = False,add_border = True):
-        if isinstance(raw_image,np.ndarray):
-            h,w = raw_image.shape[:2]
-        else:
-            w,h = raw_image.size
-        if expand:
-            x=max(0,math.ceil(region[0][0])-5)
-            t=max(0,math.ceil(region[0][1])-5)
-            y=min(w,math.ceil(region[2][0])+5)
-            b=min(h,math.ceil(region[2][1])+5)
-        else:
-            x=math.ceil(region[0][0])
-            t=math.ceil(region[0][1])
-            y=math.ceil(region[2][0])
-            b=math.ceil(region[2][1])
-        area = (x,t,y,b)
-        if isinstance(raw_image,np.ndarray):
-            raw_image = cv2.cvtColor(raw_image,cv2.COLOR_BGR2RGB)
-            raw_image = Image.fromarray(raw_image)
-
-        crop_img = raw_image.crop(area)
-        if add_border:
-            crop_img = self.__add_white_border(crop_img,50,30)
-        return crop_img
-    
-    def ocr_process(self,image,region,save_img=False):
-        import copy
-        crop_image = self.__crop_img(image,region,expand = True)
-        cv_image = np.array(crop_image)
-        cv_image = cv2.cvtColor(cv_image,cv2.COLOR_RGB2BGR)
-        
-        resp = self.__ocr(cv_image)
-        ret = []
-        for info in resp:
-            info = copy.deepcopy(info)
-            info_dict = {
-                "text_region":info[0],
-                "text":info[1][0],
-                "confidence":info[1][1],
-            }
-            ret.append(info_dict)
-        
-        if save_img == True:
-            save_path = f"test_{time.time()}.jpg"
-            cv2.imwrite(save_path,cv_image)
-            print(f"save_path:{save_path}   ret:{resp}")
-
-        if ret == []:
-            return ""
-        return ret
-
-    def tsr_process(self,image,region):
-
-        def get_boxes_recs(ocr_result, h, w) :
-            def __ocr_res_adaptor(ocr_res):
-                new_ocr_res = []
-                for i in range(len(ocr_res)):
-                    new_data = []
-                    data = ocr_res[i]
-                    new_data.append(data[0])
-                    for d in data[1]:
-                        new_data.append(d)
-                    new_ocr_res.append(new_data)
-                return new_ocr_res
-            
-            ocr_result = __ocr_res_adaptor(ocr_result)
-            dt_boxes, rec_res, scores = list(zip(*ocr_result))
-            rec_res = list(zip(rec_res, scores))
-            r_boxes = []
-            for box in dt_boxes:
-                box = np.array(box)
-                x_min = max(0, box[:, 0].min() - 1)
-                x_max = min(w, box[:, 0].max() + 1)
-                y_min = max(0, box[:, 1].min() - 1)
-                y_max = min(h, box[:, 1].max() + 1)
-                box = [x_min, y_min, x_max, y_max]
-                r_boxes.append(box)
-            dt_boxes = np.array(r_boxes)
-            return dt_boxes, rec_res
-        
-        crop_image = self.__crop_img(image,region)
-        crop_image.save("table.png")
-        pred_structures, pred_bboxes,wh = self.__tsr(crop_image)
-        ocr_ret = self.__ocr(np.array(crop_image.convert('RGB')))
-        dt_boxes, rec_res = get_boxes_recs(ocr_ret, wh.get("h"), wh.get("w"))
-        pred_html = self.__tsr.match_ocr(pred_structures, pred_bboxes, dt_boxes, rec_res)
-        return pred_html
-
-    def figure_process(self,img,region,save_foler=None,filename=None,img_idx = None):
-        folder = os.path.join(save_foler,filename)
-        if not os.path.exists(folder):
-            os.makedirs(folder,exist_ok=True)
-        bbox = [info['pts'][0],info['pts'][1],info['pts'][4],info['pts'][5]]
-        image_path = f"{folder}/{bbox}_{img_idx}.jpg"
-        crop_image = self.__crop_img(image,region,expand = True)
-        # crop_image.save(image_path)
-        cv_image = np.array(crop_image)
-        cv_image = cv2.cvtColor(cv_image,cv2.COLOR_RGB2BGR)
-        cv2.imwrite(image_path,cv_image)
 
 
 if __name__=="__main__":
