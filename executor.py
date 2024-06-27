@@ -60,9 +60,10 @@ class Executor:
 
     @staticmethod
     def extract_fn(select_img,extract_fields,layout_type = LayoutType.general.value):
+        """
+        支持自行上传图片和选择图片进行处理
+        """
         local_files = []
-        print(f"select_img:{select_img}")
-        print(f"extract_fields:{extract_fields}")
         for filepath,_ in select_img:
             local_files.append(filepath)
         if len(extract_fields) == 0:
@@ -84,6 +85,9 @@ class Executor:
     
     @staticmethod
     def extract_fn_with_model(select_img,extract_fields,layout_type = LayoutType.general.value):
+        """
+        仅支持选择图片进行处理
+        """
         print(f"layout_type:{layout_type}")
         return Executor.process_select_fn(select_img,extract_fields,layout_type)
     
@@ -269,6 +273,7 @@ class Executor:
                 if not task:
                     time.sleep(3)
                 try:
+                    # 进行信息抽取： 包含版面分析+OCR
                     _result = InformationHandler.handler(task)[0]
                     _rid = task.rid
                     _fid = task.fid

@@ -2,7 +2,7 @@
 import os
 import torch
 
-from network import get_pose_net
+from .network import get_pose_net
 
 
 def create_model(arch, heads, head_conv, convert_onnx, kwargs):

@@ -18,13 +18,12 @@ sys.path.append(
 )
 
 
-from model import create_model,load_model
-from image import get_affine_transform, transform_preds
-from decode import ctdet_4ps_decode, ctdet_cls_decode
-from wrapper import wrap_result
+from .model import create_model,load_model
+from .image import get_affine_transform, transform_preds
+from .decode import ctdet_4ps_decode, ctdet_cls_decode
 
-
-from recovery_to_doc import sorted_layout_boxes, convert_info_docx,merge_text_in_line
+# from wrapper import wrap_result
+# from recovery_to_doc import sorted_layout_boxes, convert_info_docx,merge_text_in_line
 
 def ctdet_4ps_post_process(dets, c, s, h, w, num_classes):
     # dets: batch x max_dets x dim
@@ -143,8 +142,9 @@ class Detector:
             flags=cv2.INTER_LINEAR)
         vis_image = inp_image
         # import pdb; pdb.set_trace()
-        inp_image = ((inp_image / 255. - self.mean) / self.std).astype(np.float32)
+        cv2.imwrite("/workspaces/GIES/apps/services/recovery/save/doc_inp_image.jpg",inp_image)
 
+        inp_image = ((inp_image / 255. - self.mean) / self.std).astype(np.float32)
         images = inp_image.transpose(2, 0, 1).reshape(1, 3, inp_height, inp_width)
         if self.flip_test:
             images = np.concatenate((images, images[:, :, :, ::-1]), axis=0)
@@ -459,92 +459,92 @@ if __name__=="__main__":
     resp = obj([image])
     # print(resp)
 
-    map_info = json.load(open('map_info.json'))
-    category_map = {}
-    for cate, idx in map_info["huntie"]["primary_map"].items():
-        category_map[idx] = cate
-    DocXLayoutInfo = wrap_result(resp, category_map)
-    # print(f"DocXLayoutInfo:{DocXLayoutInfo['layouts']}")
-    layout_info = DocXLayoutInfo['layouts']
+    # map_info = json.load(open('map_info.json'))
+    # category_map = {}
+    # for cate, idx in map_info["huntie"]["primary_map"].items():
+    #     category_map[idx] = cate
+    # DocXLayoutInfo = wrap_result(resp, category_map)
+    # # print(f"DocXLayoutInfo:{DocXLayoutInfo['layouts']}")
+    # layout_info = DocXLayoutInfo['layouts']
 
-    ocr_type = ["header","figure caption","title","plain text","footer","table caption"]
-    table_type = ["table"]
-    figure_type = ["figure"]
+    # ocr_type = ["header","figure caption","title","plain text","footer","table caption"]
+    # table_type = ["table"]
+    # figure_type = ["figure"]
 
-    from setting import config
-    from services.utils import get_project_path
-    _model_path = os.path.join(get_project_path(),config.OCR.MODEL_PATH)
-    recv = LayoutRecovery(_model_path)
+    # from setting import config
+    # from services.utils import get_project_path
+    # _model_path = os.path.join(get_project_path(),config.OCR.MODEL_PATH)
+    # recv = LayoutRecovery(_model_path)
 
-    # process image
-    final_ret = []
-    for info in layout_info:
-        # print(f"----> info:{info}")
-        region = [[info["pts"][0],info["pts"][1]],
-                  [info["pts"][2],info["pts"][3]],
-                  [info["pts"][4],info["pts"][5]],
-                  [info["pts"][6],info["pts"][7]]]
-        if info["category"] in ocr_type:
-            save_img = False
-            # if info['category'] in ['title','footer','header']:
-            save_img = True
-            text = recv.ocr_process(image,region,save_img=save_img)
-            # print(f"type:{info['category']}   ret:{text}")
-            process_res = merge_text_in_line(text)
-            print(f"raw text:{text}")
-            print(f"prorcess_res:{process_res}")
-            print()
-            print()
-            new_info = {
-                "img_idx":0,
-                "type":info["category"],
-                "bbox":[info['pts'][0],info['pts'][1],info['pts'][4],info['pts'][5]],
-                "res":process_res
-            }
-            final_ret.append(new_info)
-        elif info["category"] in figure_type:
-            # print(f"---> info:{info}")
-            img_idx = info.get('img_idx',0)
-            recv.figure_process(image,region,"./save",filename,img_idx=img_idx)
-            new_info = {
-                "img_idx":img_idx,
-                "type":info["category"],
-                "bbox":[info['pts'][0],info['pts'][1],info['pts'][4],info['pts'][5]],
-                "res":{},
-            }
-            final_ret.append(new_info)
-        elif info["category"] in table_type:
-            tsr_ret = recv.tsr_process(image,region)
-            new_info = {
-                "img_idx":0,
-                "type":info["category"],
-                "bbox":[info['pts'][0],info['pts'][1],info['pts'][4],info['pts'][5]],
-                "res":{
-                    "html":tsr_ret,
-                },
-            }
-            final_ret.append(new_info)
-        else:
-            raise ValueError(f"unsupport type:{info['category']}")
+    # # process image
+    # final_ret = []
+    # for info in layout_info:
+    #     # print(f"----> info:{info}")
+    #     region = [[info["pts"][0],info["pts"][1]],
+    #               [info["pts"][2],info["pts"][3]],
+    #               [info["pts"][4],info["pts"][5]],
+    #               [info["pts"][6],info["pts"][7]]]
+    #     if info["category"] in ocr_type:
+    #         save_img = False
+    #         # if info['category'] in ['title','footer','header']:
+    #         save_img = True
+    #         text = recv.ocr_process(image,region,save_img=save_img)
+    #         # print(f"type:{info['category']}   ret:{text}")
+    #         process_res = merge_text_in_line(text)
+    #         print(f"raw text:{text}")
+    #         print(f"prorcess_res:{process_res}")
+    #         print()
+    #         print()
+    #         new_info = {
+    #             "img_idx":0,
+    #             "type":info["category"],
+    #             "bbox":[info['pts'][0],info['pts'][1],info['pts'][4],info['pts'][5]],
+    #             "res":process_res
+    #         }
+    #         final_ret.append(new_info)
+    #     elif info["category"] in figure_type:
+    #         # print(f"---> info:{info}")
+    #         img_idx = info.get('img_idx',0)
+    #         recv.figure_process(image,region,"./save",filename,img_idx=img_idx)
+    #         new_info = {
+    #             "img_idx":img_idx,
+    #             "type":info["category"],
+    #             "bbox":[info['pts'][0],info['pts'][1],info['pts'][4],info['pts'][5]],
+    #             "res":{},
+    #         }
+    #         final_ret.append(new_info)
+    #     elif info["category"] in table_type:
+    #         tsr_ret = recv.tsr_process(image,region)
+    #         new_info = {
+    #             "img_idx":0,
+    #             "type":info["category"],
+    #             "bbox":[info['pts'][0],info['pts'][1],info['pts'][4],info['pts'][5]],
+    #             "res":{
+    #                 "html":tsr_ret,
+    #             },
+    #         }
+    #         final_ret.append(new_info)
+    #     else:
+    #         raise ValueError(f"unsupport type:{info['category']}")
 
-    # process image
-    # print(f"final ret:{final_ret}")
-    # for info in final_ret:
-    #     print(info)
+    # # process image
+    # # print(f"final ret:{final_ret}")
+    # # for info in final_ret:
+    # #     print(info)
     
     
-    img = np.array(image)
-    img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
-    h, w, _ = img.shape
-    res = sorted_layout_boxes(final_ret, w)
+    # img = np.array(image)
+    # img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+    # h, w, _ = img.shape
+    # res = sorted_layout_boxes(final_ret, w)
 
-    # for _ in res:
-    #     print(_['type'])
+    # # for _ in res:
+    # #     print(_['type'])
 
-    convert_info_docx(img, res, "./save", filename)
+    # convert_info_docx(img, res, "./save", filename)
                                  
 
 
-    img = draw_pic(image_path,DocXLayoutInfo)
-    cv2.imwrite("./test_ret2.jpg",img)
+    # img = draw_pic(image_path,DocXLayoutInfo)
+    # cv2.imwrite("./test_ret2.jpg",img)
     

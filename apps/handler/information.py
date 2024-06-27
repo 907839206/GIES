@@ -89,6 +89,7 @@ class InformationHandler(BaseHandler):
             "max_tokens": request_dict.get("max_tokens")
         }
         _st = time.time()
+        print(f"-----------> model:{iglobal.chat_model}")
         ans = cls.llm_service.chat(iglobal.chat_model,system, msg, **gen_conf)
         print(f"[DEBUG] ans:{ans[0]}")
         print(f"[INFO] llm time cost:{time.time()-_st}")

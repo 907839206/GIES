@@ -14,6 +14,8 @@ from table_process import HtmlToDocx
 
 
 def convert_info_docx(img, res, save_folder, img_name):
+    folder = os.path.join(save_folder,img_name)
+    os.makedirs(folder,exist_ok=True)
     doc = Document()
     doc.styles['Normal'].font.name = 'Times New Roman'
     doc.styles['Normal']._element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
@@ -21,6 +23,9 @@ def convert_info_docx(img, res, save_folder, img_name):
 
     flag = 1
     for i, region in enumerate(res):
+        entity_type = region['type'].lower()
+        if entity_type in ["header","footer"]:
+            continue
         # if len(region['res']) == 0:
         #     continue
         img_idx = region['img_idx']
@@ -60,7 +65,8 @@ def convert_info_docx(img, res, save_folder, img_name):
                 text_run.font.size = shared.Pt(10)
 
     # save to docx
-    docx_path = os.path.join(save_folder, '{}_ocr.docx'.format(img_name))
+    docx_path = os.path.join(save_folder,img_name, '{}.docx'.format(img_name))
+    
     doc.save(docx_path)
     print('docx save to {}'.format(docx_path))
 

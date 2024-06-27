@@ -606,15 +606,74 @@ if __name__=="__main__":
             cv2.putText(img, "box", (int(x0), int(y0)), font, font_scale, text_color, font_thickness, lineType=cv2.LINE_AA)
         return img
 
+    def liushui_backprocess(image,rects):
+        import random
+
+        def merge_rects(sorted_rects,thr):
+            length = len(sorted_rects)
+            i = 0 
+            new_rect_list = []
+            while i < length:
+                print(f"i: {i}")
+                new_rect = []
+                new_rect.append(sorted_rects[i])
+                rect = sorted_rects[i][0]
+                # text = sorted_rects[i][1]
+                _,yi0,_,yi1 = rect
+                yi_center = (yi1+yi0)/2
+                j = i+1
+                while j < length:
+                    print(f"j: {j}")
+                    _,yj0,_,yj1=sorted_rects[j][0]
+                    yj_center = (yj1+yj0)/2
+                    dis = yj_center - yi_center
+                    print(f"dis:{dis}")
+                    if abs(dis) > thr:
+                        break
+                    new_rect.append(sorted_rects[j])
+                    yi_center = (yj_center+yi_center) / 2
+                    j += 1
+                i = j
+                new_rect_list.append(new_rect)
+            return new_rect_list
+
+        def draw_rect_in_random_color(image,rect_lists):
+            for rect_list in rect_lists:
+                color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                thickness = 1
+                for rect in rect_list:
+                    x0,y0,x2,y2 = rect[0]
+                    cv2.rectangle(image, (int(x0), int(y0)), (int(x2), int(y2)), color, thickness)
+            return image
+
+        new_rect_list = []
+        height_dict = {}
+        for _rect in rects:
+            rect = _rect[0]
+            text = _rect[1][0]
+            x0,y0,x2,y2 = rect[0][0],rect[0][1], rect[2][0],rect[2][1]
+            new_rect = ([x0,y0,x2,y2],text)
+            new_rect_list.append(new_rect)
+            dis = (y2-y0) // 2
+            height_value = height_dict.get(dis,0)
+            height_dict[dis] = height_value + 1
+
+        thr = max(height_dict, key=lambda k: height_dict[k])
+        sorted_rects = sorted(new_rect_list,key = lambda x:(x[0][1],x[0][0]))
+        new_rect_list = merge_rects(sorted_rects,thr)
+        image = draw_rect_in_random_color(image,new_rect_list)
+        return image
+
+
     model_dir = "/workspaces/GIES/apps/services/ocr/models"
-    fileapth= "/workspaces/GIES/apps/services/layout/docx/test_1717249023.6431077.jpg"
+    fileapth= "/workspaces/GIES/apps/services/ocr/5.png"
     ocr = OCR(model_dir)
     img = cv2.imread(fileapth)
-
-    img = add_white_border(img,50,30)
-
-
     resp = ocr(img)
-
-    img_draw = draw_pic(img,resp)
+    # img_draw = draw_pic(img,resp)
+    img_draw = liushui_backprocess(img,resp)
     cv2.imwrite("ocr_res.jpg",img_draw)
+
+
+        
+        

@@ -5,7 +5,7 @@ import sys,os
 sys.path.append(
     os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "../../../"
+        "../../"
     )
 )
 
@@ -168,7 +168,7 @@ class Recovery:
         cv2.imwrite(image_path,cv_image)
 
 
-    def __call__(self,image,filename,visual = False):
+    def __call__(self,image,filename,visual = True, html = True, save_folder = "./save"):
         # layout
         if isinstance(image,np.ndarray):
             image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
@@ -179,7 +179,6 @@ class Recovery:
             # PIL.Image
             pass
         layout_res = self.__layout_recog([image])
-
         layout_info = wrap_result(layout_res, self.__category)
         layouts = layout_info['layouts']
 
@@ -201,7 +200,7 @@ class Recovery:
                 final_ret.append(new_info)
             elif info["category"] in self.__figure_type:
                 img_idx = info.get('img_idx',0)
-                _ = self.figure_process(image,info,region,"./save/img",filename,img_idx=img_idx)
+                _ = self.figure_process(image,info,region,save_folder,filename,img_idx=img_idx)
                 new_info = {
                     "img_idx":img_idx,
                     "type":info["category"],
@@ -227,24 +226,27 @@ class Recovery:
         img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
         _, w, _ = img.shape
         res = sorted_layout_boxes(final_ret, w)
-        convert_info_docx(img, res, "./save/doc", filename)
+
+        convert_info_docx(img, res, save_folder, filename)
         visual_path = None
         if visual:
-            img = self.__layout_recog.draw_pic(img,layout_res)
-            cv2.imwrite(f"./save/visual/{filename}",img)
-            visual_path = f"./save/visual/{filename}.jpg"
-
-        convert_docx_to_html(f"./save/doc/{filename}_ocr.docx",f"./save/html/{filename}.html")
+            img = self.__layout_recog.draw_pic(img,layout_info)
+            visual_path = f"./{save_folder}/{filename}/{filename}.jpg"
+            cv2.imwrite(visual_path,img)
+        html_path = None
+        if html:
+            html_path = f"./{save_folder}/{filename}/{filename}.html"
+            convert_docx_to_html(f"./{save_folder}/{filename}/{filename}.docx",html_path)
         return {
-            "doc": f"./save/doc/{filename}_ocr.docx",
+            "doc": f"./{save_folder}/{filename}/{filename}.docx",
             "visual": visual_path,
-            "html":f"./save/html/{filename}.html"
+            "html": html_path
         }
 
 
 if __name__ == "__main__":
     model_dir = "/workspaces/GIES/apps/services/ocr/models"
-    image_path = "/workspaces/GIES/static/paper3.png"
+    image_path = "/workspaces/GIES/static/paper6.png"
     filename = os.path.basename(image_path).split('.')[0]
     recv = Recovery(model_dir)
 

@@ -70,6 +70,7 @@ class PictureParser(BaseParser):
                         _dt_boxes, _rec_res = get_boxes_recs(_table_ocr_ret, _wh.get("h"), _wh.get("w"))
                         _pred_html = self.__tsr.match_ocr(_pred_structures, _pred_bboxes, _dt_boxes, _rec_res)
                         _table_ret.append(_pred_html)
+                        print(f"[DEBUG] _dt_boxes:{_dt_boxes}  _rec_res:{_rec_res}")
                     print(f"[DEBUG] tsr result:{_table_ret}")
                 # (3) 文字识别
                 _msk_img = _mask_img_list[0]
@@ -79,6 +80,8 @@ class PictureParser(BaseParser):
                 if _use_tsr and len(_table_ret) > 0: 
                     _txt += "\n".join(_table_ret)
                 tokenize(ret, _txt)
+
+                print(f"DEBUG ocr ret:{_bxs}")
                 return [ret]
             elif layout_type == LayoutType.text.value:
                 # (1) 文字识别
